@@ -1,110 +1,63 @@
-# name: 🚀 Deploy Docker app on push
- 
-# on:
+name: Deploy Docker app on push
 
-#   push:
+on:
+  push:
+    branches:
+      - main
 
-#     branches:
+jobs:
+  docker-deploy:
+    name: Deploy Docker Container
+    runs-on: ubuntu-latest
 
-#       - main
- 
-# jobs:
+    steps:
+      - name: Get latest code
+        uses: actions/checkout@v4
 
-#   docker-deploy:
+      - name: Upload project files to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: 22
+          source: "./*"
+          target: "/home/s2209682-node/htdocs/s2209682n.ncgrp.xyz/Devops/Classactivity/Wk11"
 
-#     name: 🐳 Deploy Docker Container
+      - name: Build and restart Docker container on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: 22
+          script: |
+            set -e
 
-#     runs-on: ubuntu-latest
- 
-#     steps:
+            APP_DIR="/home/s2209682-node/htdocs/s2209682n.ncgrp.xyz/Devops/Classactivity/Wk11"
+            CONTAINER_NAME="grp02image-app"
+            IMAGE_NAME="grp02image-app:latest"
 
-#       - name: 🚚 Get latest code
+            cd "$APP_DIR"
 
-#         uses: actions/checkout@v4
- 
-#       - name: 📤 Upload project files to server
+            echo "Current directory:"
+            pwd
 
-#         uses: appleboy/scp-action@v0.1.7
+            echo "Files:"
+            ls -la
 
-#         with:
+            if [ ! -f Dockerfile ]; then
+              echo "ERROR: Dockerfile not found in $APP_DIR"
+              exit 1
+            fi
 
-#           host: ${{ secrets.FTP_SERVER }}
+            docker stop "$CONTAINER_NAME" || true
+            docker rm "$CONTAINER_NAME" || true
 
-#           username: ${{ secrets.FTP_USERNAME }}
+            docker build -t "$IMAGE_NAME" .
 
-#           password: ${{ secrets.FTP_PASSWORD }}
-
-#           port: 22
-
-#           source: "./"
-
-#           target: "/home/s2209682-node/htdocs/s2209682n.ncgrp.xyz/Devops/Classactivity/Wk11"
-
-#           strip_components: 1
- 
-#       - name: 🐳 Build & restart Docker container on server
-
-#         uses: appleboy/ssh-action@v1.0.3
-
-#         with:
-
-#           host: ${{ secrets.FTP_SERVER }}
-
-#           username: ${{ secrets.FTP_USERNAME }}
-
-#           password: ${{ secrets.FTP_PASSWORD }}
-
-#           port: 22
-
-#           script: |
-
-#             set -e
- 
-#             APP_DIR=" /home/s2209682-node/htdocs/s2209682n.ncgrp.xyz/Devops/Classactivity/Wk11"
-
-#             CONTAINER_NAME="grp02image-app"
-
-#             IMAGE_NAME="grp02image-app:latest"
- 
-#             cd "$APP_DIR"
- 
-#             echo "Current directory:"
-
-#             pwd
-
-#             echo "Files:"
-
-#             ls -la
- 
-#             # Ensure Dockerfile exists before build
-
-#             if [ ! -f Dockerfile ]; then
-
-#               echo "ERROR: Dockerfile not found in $APP_DIR"
-
-#               exit 1
-
-#             fi
- 
-#             # Stop and remove old container (safe on first run)
-
-#             docker stop "$CONTAINER_NAME" || true
-
-#             docker rm "$CONTAINER_NAME" || true
- 
-#             # Build latest image
-
-#             docker build -t "$IMAGE_NAME" .
- 
-#             # Run new container
-
-#             docker run -d \
-
-#               --name "$CONTAINER_NAME" \
-
-#               --restart unless-stopped \
-
-#               -p 3040:80 \
-
-#               "$IMAGE_NAME"
- 
+            docker run -d \
+              --name "$CONTAINER_NAME" \
+              --restart unless-stopped \
+              -p 3040:80 \
+              "$IMAGE_NAME"
