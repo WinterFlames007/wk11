@@ -60,7 +60,7 @@
 
 #             set -e
  
-#             APP_DIR="/htdocs/s2209682n.ncgrp.xyz/Devops/Classactivity/Wk11"
+#             APP_DIR=" /home/s2209682-node/htdocs/s2209682n.ncgrp.xyz/Devops/Classactivity/Wk11"
 
 #             CONTAINER_NAME="grp02image-app"
 
